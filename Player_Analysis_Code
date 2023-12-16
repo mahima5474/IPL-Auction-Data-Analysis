@@ -1,0 +1,101 @@
+/*Top Rated player in the year 2022*/
+
+SELECT Player, Type, rating
+FROM ipl_data
+WHERE rating = (SELECT MAX(rating) FROM ipl_data);/*Top Rated player in the year 2022*/
+
+
+/*Auction Details*/
+
+SELECT Player, Type, Base_Price, COST, 2021_Squad, team
+FROM ipl_2022_dataset;
+
+
+/*Ratings of unsold player, return null because all the rated players were sold*/
+
+SELECT d.Player, d.Type, d.Base_Price, d.COST, d. 2021_Squad
+FROM ipl_2022_dataset d
+LEFT JOIN ipl_data p ON d.Player = p.Player
+WHERE d.team = 'unsold';
+
+
+/*total undsold grouped by type*/
+
+SELECT Type, COUNT(*) AS Total_Sold
+FROM ipl_2022_dataset
+WHERE team != 'unsold'
+GROUP BY Type;
+
+/*Top Rated players type wise*/
+
+SELECT type, player, rating
+FROM ipl_data
+WHERE (type, rating) IN (
+    SELECT type, MAX(rating)
+    FROM ipl_data
+    GROUP BY type
+);
+
+
+/*over sold players*/
+
+SELECT Player, Type, Base_Price, COST
+FROM ipl_2022_dataset
+WHERE COST > Base_Price;
+
+
+/*Unsold Players*/
+
+SELECT *
+FROM ipl_2022_dataset
+WHERE Team = 'Unsold';
+
+
+/*PLayers who changed the teams*/
+
+SELECT d.Player, d.Type, d. 2021_Squad AS Squad_2021, d.team AS Squad_2022
+FROM ipl_2022_dataset d
+JOIN ipl_data p ON d.Player = p.Player
+WHERE d. 2021_Squad != d.team;
+
+
+/*Average selling price group wise*/
+
+SELECT Type, AVG(COST) AS Avg_Sold_Price
+FROM ipl_2022_dataset
+WHERE team != 'unsold'
+GROUP BY Type;
+
+
+/*percentage increase in the base to sold prices descending*/
+
+SELECT Player, Type, Base_Price, COST, ((COST - Base_Price) / Base_Price) * 100 AS Price_Increase_Percentage
+FROM ipl_2022_dataset
+WHERE team != 'unsold'
+order by price_Increase_Percentage desc;
+
+
+/*players who are not in top 100 rating list*/
+
+SELECT Player, Type, 2021_Squad, team
+FROM ipl_2022_dataset
+WHERE Player NOT IN (SELECT Player FROM ipl_data);
+
+
+/*Ranking Players in each type*/
+
+SELECT Player, Type, rating, RANK() OVER(PARTITION BY Type ORDER BY rating DESC) AS Rating_Rank
+FROM ipl_data;
+
+
+/*Top Rated players who got sold above avg selling price*/
+
+WITH TopRated AS (
+    SELECT Player, Type, rating
+    FROM ipl_data
+    WHERE rating > (SELECT AVG(rating) FROM ipl_data)
+)
+SELECT d.Player, d.Type, d.COST, t.rating
+FROM ipl_2022_dataset d
+JOIN TopRated t ON d.Player = t.Player 
+WHERE d.COST > (SELECT AVG(COST) FROM ipl_2022_dataset WHERE Type = d.Type); 
